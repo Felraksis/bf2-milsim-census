@@ -60,7 +60,6 @@ function medalClasses(kind: "gold" | "silver" | "bronze") {
 function PodiumCard({
   rank,
   name,
-  inviteUrl,
   iconUrl,
   createdAt,
   kind,
@@ -68,7 +67,6 @@ function PodiumCard({
 }: {
   rank: number;
   name: string;
-  inviteUrl: string;
   iconUrl: string | null | undefined;
   createdAt: string;
   kind: "gold" | "silver" | "bronze";
@@ -90,14 +88,6 @@ function PodiumCard({
           <ServerIcon url={iconUrl} name={name} />
           <div className="min-w-0">
             <div className="font-semibold truncate">{name}</div>
-            <a
-              href={inviteUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-white/65 underline break-all"
-            >
-              {inviteUrl}
-            </a>
           </div>
         </div>
 
@@ -162,7 +152,6 @@ export default async function HallOfFamePage() {
           <PodiumCard
             rank={2}
             name={second.name}
-            inviteUrl={second.invite_url}
             iconUrl={second.discord_icon_url}
             createdAt={second.server_created_at!}
             kind="silver"
@@ -179,7 +168,6 @@ export default async function HallOfFamePage() {
           <PodiumCard
             rank={1}
             name={first.name}
-            inviteUrl={first.invite_url}
             iconUrl={first.discord_icon_url}
             createdAt={first.server_created_at!}
             kind="gold"
@@ -196,7 +184,6 @@ export default async function HallOfFamePage() {
           <PodiumCard
             rank={3}
             name={third.name}
-            inviteUrl={third.invite_url}
             iconUrl={third.discord_icon_url}
             createdAt={third.server_created_at!}
             kind="bronze"
@@ -246,14 +233,6 @@ export default async function HallOfFamePage() {
                       <ServerIcon url={m.discord_icon_url} name={m.name} />
                       <div className="min-w-0">
                         <div className="font-medium truncate">{m.name}</div>
-                        <a
-                          href={m.invite_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-white/60 underline break-all"
-                        >
-                          {m.invite_url}
-                        </a>
                       </div>
                     </div>
                   </td>
