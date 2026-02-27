@@ -12,13 +12,6 @@ export const metadata = {
       "Find active Battlefront II milsims and explore the oldest still-standing legions.",
     url: "https://bf2-milsims.com",
     siteName: "BF2 Milsim Census",
-    images: [
-      {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
-      },
-    ],
   },
 };
 
