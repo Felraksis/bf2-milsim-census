@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getVerifiedMilsims } from "@/lib/milsims";
 import ServerIcon from "@/components/ServerIcon";
 import AutoRefresh from "@/components/AutoRefresh";
+import { slugifyMilsimName } from "@/lib/slug";
+import CopyMilsimLink from "@/components/CopyMilsimLink";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +68,6 @@ export default async function MilsimsPage({
           <span className="text-white/50">Soon: Auto-refreshes every 60s</span>
         </div>
 
-        {/* optional: show active query in the notice */}
         {q ? (
           <div className="shrink-0 text-xs text-white/50">
             Filter: <span className="text-white/70">{q}</span>
@@ -107,80 +108,91 @@ export default async function MilsimsPage({
             No verified servers yet.
           </div>
         ) : (
-          milsims.map((m: any) => (
-            <div
-              key={m.id}
-              className="rounded-2xl border border-white/10 bg-white/5 p-5"
-              style={{ borderLeft: `8px solid ${m.theme_color ?? "#666"}` }}
-            >
-              <div className="flex items-start justify-between gap-6">
-                <div className="flex items-center gap-3 min-w-0">
-                  <ServerIcon url={m.discord_icon_url} name={m.name} />
+          milsims.map((m: any) => {
+            const slug = m.slug ?? slugifyMilsimName(m.name);
 
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="text-lg font-semibold truncate">
-                        {m.name}
+            return (
+              <div
+                key={m.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-5"
+                style={{ borderLeft: `8px solid ${m.theme_color ?? "#666"}` }}
+              >
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <ServerIcon url={m.discord_icon_url} name={m.name} />
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/milsims/${slug}`}
+                          className="text-lg font-semibold truncate hover:underline"
+                          title="Open detail page"
+                        >
+                          {m.name}
+                        </Link>
+
+                        {/* copy link + popup */}
+                        <CopyMilsimLink slug={slug} />
+
+                        <div className="flex flex-wrap gap-2">
+                          {(m.platforms ?? []).map((p: string) => {
+                            const b = PLATFORM_BADGE[p] ?? { dot: "", label: p };
+                            return (
+                              <span
+                                key={`plat-${m.id}-${p}`}
+                                className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/80"
+                                title={`Platform: ${b.label}`}
+                              >
+                                {b.dot} {b.label}
+                              </span>
+                            );
+                          })}
+                        </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        {(m.platforms ?? []).map((p: string) => {
-                          const b = PLATFORM_BADGE[p] ?? { dot: "⚪", label: p };
-                          return (
-                            <span
-                              key={`plat-${m.id}-${p}`}
-                              className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/80"
-                              title={`Platform: ${b.label}`}
-                            >
-                              {b.dot} {b.label}
-                            </span>
-                          );
-                        })}
+                      <a
+                        href={m.invite_url}
+                        className="text-sm text-white/70 underline break-all"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {m.invite_url}
+                      </a>
+
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/70">
+                        {(m.factions ?? []).map((x: string) => (
+                          <span
+                            key={`f-${m.id}-${x}`}
+                            className="rounded-full border border-white/15 px-2 py-1"
+                          >
+                            {x}
+                          </span>
+                        ))}
+                        {(m.tags ?? []).map((x: string) => (
+                          <span
+                            key={`t-${m.id}-${x}`}
+                            className="rounded-full bg-white/10 px-2 py-1"
+                          >
+                            {x}
+                          </span>
+                        ))}
                       </div>
-                    </div>
-
-                    <a
-                      href={m.invite_url}
-                      className="text-sm text-white/70 underline break-all"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {m.invite_url}
-                    </a>
-
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/70">
-                      {(m.factions ?? []).map((x: string) => (
-                        <span
-                          key={`f-${m.id}-${x}`}
-                          className="rounded-full border border-white/15 px-2 py-1"
-                        >
-                          {x}
-                        </span>
-                      ))}
-                      {(m.tags ?? []).map((x: string) => (
-                        <span
-                          key={`t-${m.id}-${x}`}
-                          className="rounded-full bg-white/10 px-2 py-1"
-                        >
-                          {x}
-                        </span>
-                      ))}
                     </div>
                   </div>
-                </div>
 
-                <div className="shrink-0 text-right text-xs text-white/60 space-y-1">
-                  <div>Members: {m.members_count ?? "—"}</div>
-                  <div>Online: {m.online_count ?? "—"}</div>
+                  <div className="shrink-0 text-right text-xs text-white/60 space-y-1">
+                    <div>Members: {m.members_count ?? "—"}</div>
+                    <div>Online: {m.online_count ?? "—"}</div>
 
-                  <div className="pt-1">
-                    Est:{" "}
-                    {m.server_created_at ? fmtDate.format(new Date(m.server_created_at)) : "—"}
+                    <div className="pt-1">
+                      Est:{" "}
+                      {m.server_created_at ? fmtDate.format(new Date(m.server_created_at)) : "—"}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

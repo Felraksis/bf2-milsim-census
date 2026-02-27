@@ -22,6 +22,8 @@ export type DirectoryMilsim = {
   submitted_by: string | null;
   moderator_notes: string | null;
 
+  slug: string | null;
+
   theme_color: string | null;
   discord_icon_url: string | null;
 
@@ -163,4 +165,23 @@ export async function refreshVerifiedMilsimsBatchFromDiscord(opts?: {
   }
 
   return { refreshed, attempted };
+}
+
+export async function getVerifiedMilsimBySlug(slug: string): Promise<DirectoryMilsim | null> {
+  const { data, error } = await supabaseServer
+    .from("milsim_directory")
+    .select("*")
+    .eq("status", "verified")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  return {
+    ...(data as any),
+    platforms: jsonArrayToStringArray((data as any).platforms),
+    factions: jsonArrayToStringArray((data as any).factions),
+    tags: jsonArrayToStringArray((data as any).tags),
+  } as DirectoryMilsim;
 }
