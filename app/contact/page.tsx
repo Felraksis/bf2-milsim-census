@@ -7,10 +7,7 @@ export default function ContactPage() {
       </p>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-white/80">
-        Discord:
-        <ul className="list-disc pl-5 mt-2 text-white/70">
-          <li>felraksis</li>
-        </ul>
+        Discord: felraksis
       </div>
     </div>
   );
