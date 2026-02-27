@@ -1,1 +1,0 @@
-console.log("SUPABASE URL:", process.env.SUPABASE_URL);

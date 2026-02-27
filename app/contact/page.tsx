@@ -3,14 +3,13 @@ export default function ContactPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Contact</h1>
       <p className="text-white/70">
-        Add your contact method(s) here (Discord handle, server invite, email, etc.).
+        If you wish to contact the owner of the website, do so via discord.
       </p>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-white/80">
-        Example:
+        Discord:
         <ul className="list-disc pl-5 mt-2 text-white/70">
-          <li>Discord: Major Felra</li>
-          <li>168th Legion: your permanent invite</li>
+          <li>felraksis</li>
         </ul>
       </div>
     </div>
