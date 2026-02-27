@@ -11,6 +11,17 @@ const PLATFORM_BADGE: Record<string, { dot: string; label: string }> = {
   PSN: { dot: "🔵", label: "PSN" },
 };
 
+const fmtDate = new Intl.DateTimeFormat("de-DE", {
+  dateStyle: "medium",
+  timeZone: "Europe/Berlin",
+});
+
+const fmtDateTime = new Intl.DateTimeFormat("de-DE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Europe/Berlin",
+});
+
 function getLatestCheckedAt(milsims: any[]) {
   const dates = milsims
     .map((m) => (m?.last_checked_at ? new Date(m.last_checked_at).getTime() : 0))
@@ -50,7 +61,7 @@ export default async function MilsimsPage({
       <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <span className="text-white/80">Last updated:</span>{" "}
-          {lastUpdated ? lastUpdated.toLocaleString() : "—"}
+          {lastUpdated ? fmtDateTime.format(lastUpdated) : "—"}
           <span className="text-white/40"> ·</span>{" "}
           <span className="text-white/50">Auto-refreshes every 60s</span>
         </div>
@@ -164,9 +175,7 @@ export default async function MilsimsPage({
 
                   <div className="pt-1">
                     Est:{" "}
-                    {m.server_created_at
-                      ? new Date(m.server_created_at).toLocaleDateString()
-                      : "—"}
+                    {m.server_created_at ? fmtDate.format(new Date(m.server_created_at)) : "—"}
                   </div>
                 </div>
               </div>

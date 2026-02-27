@@ -8,15 +8,22 @@ const PLATFORM_OPTIONS = [
   { code: "psn", label: "PSN", dot: "🔵" },
 ] as const;
 
-function normalizePlatforms(values: FormDataEntryValue[] | FormDataEntryValue | null): string[] {
+type PlatformCode = (typeof PLATFORM_OPTIONS)[number]["code"];
+
+function isPlatformCode(x: string): x is PlatformCode {
+  return PLATFORM_OPTIONS.some((p) => p.code === x);
+}
+
+function normalizePlatforms(
+  values: FormDataEntryValue[] | FormDataEntryValue | null
+): PlatformCode[] {
   const arr = Array.isArray(values) ? values : values ? [values] : [];
   const cleaned = arr
     .map((v) => String(v).trim().toLowerCase())
     .filter(Boolean);
 
-  // keep only allowed
-  const allowed = new Set(PLATFORM_OPTIONS.map((p) => p.code));
-  return Array.from(new Set(cleaned.filter((c) => allowed.has(c))));
+  // keep only allowed + unique
+  return Array.from(new Set(cleaned.filter(isPlatformCode)));
 }
 
 async function submitAction(formData: FormData) {
@@ -48,10 +55,6 @@ async function submitAction(formData: FormData) {
       online_count: discord.online,
       last_checked_at: new Date().toISOString(),
 
-      // auto theme color is handled in refresh or your insert logic elsewhere
-      // if you want it here too, add computeIconColorHex like before.
-      // theme_color: ...
-
       submitted_by,
       status: "pending",
     })
@@ -78,7 +81,9 @@ async function submitAction(formData: FormData) {
       })) ?? [];
 
     if (links.length > 0) {
-      const { error: linkErr } = await supabaseServer.from("milsim_platforms").insert(links);
+      const { error: linkErr } = await supabaseServer
+        .from("milsim_platforms")
+        .insert(links);
       if (linkErr) throw new Error(linkErr.message);
     }
   }
@@ -110,18 +115,40 @@ export default function SubmitPage() {
 
         <div>
           <div className="text-xs text-white/60 mb-2">Platforms</div>
-          <div className="flex flex-wrap gap-3">
-            {PLATFORM_OPTIONS.map((p) => (
-              <label
-                key={p.code}
-                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80 hover:border-white/20 cursor-pointer"
-              >
-                <input type="checkbox" name="platforms" value={p.code} />
-                <span>{p.dot}</span>
-                <span>{p.label}</span>
-              </label>
-            ))}
-          </div>
+            <div className="flex flex-wrap gap-3">
+                {PLATFORM_OPTIONS.map((p) => (
+                    <label key={p.code} className="cursor-pointer">
+                    {/* hidden real checkbox */}
+                    <input
+                        type="checkbox"
+                        name="platforms"
+                        value={p.code}
+                        className="peer sr-only"
+                    />
+
+                    {/* visual button */}
+                    <div
+                        className="
+                        flex items-center gap-2
+                        rounded-xl border px-4 py-2 text-sm
+                        transition-all duration-150
+
+                        border-white/10 bg-white/5 text-white/80
+                        hover:border-white/30 hover:bg-white/10
+
+                        peer-checked:bg-white
+                        peer-checked:text-black
+                        peer-checked:border-white
+                        peer-checked:shadow-md
+                        peer-checked:ring-2 peer-checked:ring-white/30
+                        "
+                    >
+                        <span>{p.dot}</span>
+                        <span>{p.label}</span>
+                    </div>
+                    </label>
+                ))}
+            </div>
           <p className="mt-2 text-xs text-white/50">
             Select all platforms your milsim supports.
           </p>

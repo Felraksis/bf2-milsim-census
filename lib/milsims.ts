@@ -121,3 +121,46 @@ export async function getHallOfFameAll(): Promise<DirectoryMilsim[]> {
     tags: jsonArrayToStringArray(row.tags),
   })) as DirectoryMilsim[];
 }
+
+export async function refreshVerifiedMilsimsBatchFromDiscord(opts?: {
+  // how many servers to refresh per cron tick
+  limit?: number;
+  // only refresh servers that haven't been checked in this many seconds
+  minAgeSeconds?: number;
+}): Promise<{ refreshed: number; attempted: number }> {
+  const limit = opts?.limit ?? 10; // tune this
+  const minAgeSeconds = opts?.minAgeSeconds ?? 60;
+
+  const cutoffIso = new Date(Date.now() - minAgeSeconds * 1000).toISOString();
+
+  // Pick candidates from the base table "milsims" (not the view),
+  // because refreshMilsimFromDiscord updates "milsims".
+  //
+  // We want: verified AND (last_checked_at is null OR last_checked_at < cutoff)
+  const { data: candidates, error } = await supabaseServer
+    .from("milsims")
+    .select("id, last_checked_at")
+    .eq("status", "verified")
+    .or(`last_checked_at.is.null,last_checked_at.lt.${cutoffIso}`)
+    .order("last_checked_at", { ascending: true, nullsFirst: true })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+
+  let refreshed = 0;
+  let attempted = 0;
+
+  for (const row of candidates ?? []) {
+    attempted++;
+    try {
+      // Reuse your existing logic (includes Discord fetch + icon color + update)
+      await refreshMilsimFromDiscord(row.id);
+      refreshed++;
+    } catch {
+      // Ignore individual failures so the batch continues
+      // (Discord rate limits / bad invite / transient errors)
+    }
+  }
+
+  return { refreshed, attempted };
+}
