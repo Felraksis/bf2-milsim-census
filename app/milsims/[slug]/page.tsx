@@ -21,9 +21,41 @@ const fmtDateTime = new Intl.DateTimeFormat("de-DE", {
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-      <div className="text-[11px] uppercase tracking-wide text-white/50">{label}</div>
+      <div className="text-[11px] uppercase tracking-wide text-white/50">
+        {label}
+      </div>
       <div className="mt-1 text-sm text-white/80">{value}</div>
     </div>
+  );
+}
+
+function ActivityPill({
+  status,
+}: {
+  status: "active" | "inactive" | "unknown" | null | undefined;
+}) {
+  const s = status ?? "unknown";
+
+  if (s === "active") {
+    return (
+      <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-xs text-emerald-200">
+        Active
+      </span>
+    );
+  }
+
+  if (s === "inactive") {
+    return (
+      <span className="rounded-full border border-red-400/30 bg-red-400/10 px-2 py-1 text-xs text-red-200">
+        Inactive
+      </span>
+    );
+  }
+
+  return (
+    <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/70">
+      Unknown
+    </span>
   );
 }
 
@@ -72,9 +104,14 @@ export default async function MilsimDetailPage({
             <ServerIcon url={milsim.discord_icon_url} name={milsim.name} />
 
             <div className="min-w-0">
-              <h1 className="text-3xl font-bold leading-tight truncate">
-                {milsim.name}
-              </h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-3xl font-bold leading-tight truncate">
+                  {milsim.name}
+                </h1>
+
+                {/* ✅ activity label */}
+                <ActivityPill status={milsim.activity_status} />
+              </div>
 
               <div className="mt-1 text-sm text-white/60 break-all">
                 <span className="text-white/50">Invite:</span>{" "}
@@ -123,7 +160,7 @@ export default async function MilsimDetailPage({
             </div>
           </div>
 
-          {/* right side: small meta */}
+          {/* right side meta */}
           <div className="text-xs text-white/55 space-y-1 md:text-right">
             <div>
               <span className="text-white/45">Established:</span>{" "}
@@ -131,10 +168,19 @@ export default async function MilsimDetailPage({
                 ? fmtDate.format(new Date(milsim.server_created_at))
                 : "—"}
             </div>
+
             <div>
-              <span className="text-white/45">Last checked:</span>{" "}
+              <span className="text-white/45">Last Discord check:</span>{" "}
               {milsim.last_checked_at
                 ? fmtDateTime.format(new Date(milsim.last_checked_at))
+                : "—"}
+            </div>
+
+            {/* ✅ activity check timestamp */}
+            <div>
+              <span className="text-white/45">Last activity check:</span>{" "}
+              {milsim.activity_checked_at
+                ? fmtDateTime.format(new Date(milsim.activity_checked_at))
                 : "—"}
             </div>
           </div>
@@ -147,16 +193,19 @@ export default async function MilsimDetailPage({
         <Stat label="Online" value={milsim.online_count ?? "—"} />
         <Stat
           label="Discord Server ID"
-          value={milsim.discord_server_id ? <span className="break-all">{milsim.discord_server_id}</span> : "—"}
+          value={
+            milsim.discord_server_id ? (
+              <span className="break-all">{milsim.discord_server_id}</span>
+            ) : (
+              "—"
+            )
+          }
         />
-        <Stat
-          label="Invite Code"
-          value={milsim.discord_invite_code ?? "—"}
-        />
+        <Stat label="Invite Code" value={milsim.discord_invite_code ?? "—"} />
       </div>
 
-      {/* optional extra info blocks */}
-      {(milsim.claimed_founded_at || milsim.lineage_notes) ? (
+      {/* optional notes */}
+      {milsim.claimed_founded_at || milsim.lineage_notes ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-3">
           <div className="text-lg font-semibold">Notes</div>
 

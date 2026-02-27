@@ -7,6 +7,17 @@ import CopyMilsimLink from "@/components/CopyMilsimLink";
 
 export const dynamic = "force-dynamic";
 
+function ActivityDot({
+  status,
+}: {
+  status: "active" | "inactive" | "unknown" | null | undefined;
+}) {
+  const s = status ?? "unknown";
+  if (s === "active") return <span className="inline-block h-3 w-3 rounded-full bg-emerald-400" />;
+  if (s === "inactive") return <span className="inline-block h-3 w-3 rounded-full bg-red-400" />;
+  return <span className="inline-block h-3 w-3 rounded-full bg-white" />;
+}
+
 const PLATFORM_BADGE: Record<string, { dot: string; label: string }> = {
   PC: { dot: "", label: "PC" },
   Xbox: { dot: "", label: "Xbox" },
@@ -123,6 +134,7 @@ export default async function MilsimsPage({
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
+                        <ActivityDot status={m.activity_status} />
                         <Link
                           href={`/milsims/${slug}`}
                           className="text-lg font-semibold truncate hover:underline"

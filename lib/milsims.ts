@@ -31,6 +31,10 @@ export type DirectoryMilsim = {
   platforms: string[];
   factions: string[];
   tags: string[];
+
+  // ✅ NEW
+  activity_status: "active" | "inactive" | "unknown" | null;
+  activity_checked_at: string | null;
 };
 
 function jsonArrayToStringArray(v: unknown): string[] {
@@ -111,7 +115,7 @@ export async function getHallOfFameAll(): Promise<DirectoryMilsim[]> {
     .from("milsim_directory")
     .select("*")
     .eq("status", "verified")
-    // oldest first (rank 1 is oldest)
+    .eq("activity_status", "active")
     .order("server_created_at", { ascending: true, nullsFirst: false })
     .order("name", { ascending: true });
 
