@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 export default function HomePage() {
+  console.log("SUPABASE URL:", process.env.SUPABASE_URL);
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">BF2 Milsim Census</h1>
