@@ -131,9 +131,6 @@ export default async function MilsimsPage({
                           {m.name}
                         </Link>
 
-                        {/* copy link + popup */}
-                        <CopyMilsimLink slug={slug} />
-
                         <div className="flex flex-wrap gap-2">
                           {(m.platforms ?? []).map((p: string) => {
                             const b = PLATFORM_BADGE[p] ?? { dot: "⚪", label: p };

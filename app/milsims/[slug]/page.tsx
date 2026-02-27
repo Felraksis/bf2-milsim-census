@@ -57,7 +57,7 @@ export default async function MilsimDetailPage({
             className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-black hover:bg-white/90"
             title="Open Discord invite"
           >
-            Open Discord
+            Open in Discord
           </a>
         </div>
       </div>
