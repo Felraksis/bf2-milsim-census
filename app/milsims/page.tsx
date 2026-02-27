@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getVerifiedMilsims, refreshMilsimFromDiscord } from "@/lib/milsims";
-import ServerIcon from "@/components/ServerIcon.tsx";
+import ServerIcon from "@/components/ServerIcon";
 
 export const dynamic = "force-dynamic";
 
