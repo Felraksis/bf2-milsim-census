@@ -2,9 +2,24 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { NavBar } from "@/components/NavBar";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "BF2 Milsim Census",
-  description: "A community-run directory and census of active Battlefront II milsims.",
+  description:
+    "Directory and historical census of Star Wars Battlefront II milsim communities.",
+  openGraph: {
+    title: "BF2 Milsim Census",
+    description:
+      "Find active Battlefront II milsims and explore the oldest still-standing legions.",
+    url: "https://bf2-milsims.com",
+    siteName: "BF2 Milsim Census",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
