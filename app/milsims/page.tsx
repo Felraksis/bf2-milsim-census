@@ -136,7 +136,7 @@ export default async function MilsimsPage({
 
                         <div className="flex flex-wrap gap-2">
                           {(m.platforms ?? []).map((p: string) => {
-                            const b = PLATFORM_BADGE[p] ?? { dot: "", label: p };
+                            const b = PLATFORM_BADGE[p] ?? { dot: "⚪", label: p };
                             return (
                               <span
                                 key={`plat-${m.id}-${p}`}
