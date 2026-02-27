@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 export default function HomePage() {
-  console.log("SUPABASE URL:", process.env.SUPABASE_URL);
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">BF2 Milsim Census</h1>
@@ -34,7 +33,7 @@ export default function HomePage() {
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
         <div className="text-sm text-white/70">
-          MVP status: pages are live; database wiring comes next.
+          Latest Update (27.02.2026): v1 Launched, feature requests to 'felraksis' on Discord.
         </div>
       </div>
     </div>

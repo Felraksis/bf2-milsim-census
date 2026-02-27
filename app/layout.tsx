@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
         <footer className="mx-auto max-w-5xl px-4 pb-10 text-xs text-white/50">
           <div className="border-t border-white/10 pt-6">
-            Community project — listings are provided by server reps.
+            This is a Community project, not endorsed by Disney or EA — listings are provided by the community.
           </div>
         </footer>
       </body>
