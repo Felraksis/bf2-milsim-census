@@ -3,9 +3,9 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { fetchDiscordInvite } from "@/lib/discord";
 
 const PLATFORM_OPTIONS = [
-  { code: "pc", label: "PC", dot: "🔴" },
-  { code: "xbox", label: "Xbox", dot: "🟢" },
-  { code: "psn", label: "PSN", dot: "🔵" },
+  { code: "pc", label: "PC", dot: "" },
+  { code: "xbox", label: "Xbox", dot: "" },
+  { code: "psn", label: "PSN", dot: "" },
 ] as const;
 
 type PlatformCode = (typeof PLATFORM_OPTIONS)[number]["code"];

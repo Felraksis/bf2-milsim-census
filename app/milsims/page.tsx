@@ -6,9 +6,9 @@ import AutoRefresh from "@/components/AutoRefresh";
 export const dynamic = "force-dynamic";
 
 const PLATFORM_BADGE: Record<string, { dot: string; label: string }> = {
-  PC: { dot: "🔴", label: "PC" },
-  Xbox: { dot: "🟢", label: "Xbox" },
-  PSN: { dot: "🔵", label: "PSN" },
+  PC: { dot: "", label: "PC" },
+  Xbox: { dot: "", label: "Xbox" },
+  PSN: { dot: "", label: "PSN" },
 };
 
 const fmtDate = new Intl.DateTimeFormat("de-DE", {
