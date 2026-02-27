@@ -1,269 +1,207 @@
 import Link from "next/link";
+import { getVerifiedMilsims, maybeRefreshDirectoryOnVisit } from "@/lib/milsims";
 import ServerIcon from "@/components/ServerIcon";
-import { getHallOfFameAll } from "@/lib/milsims";
+import AutoRefresh from "@/components/AutoRefresh";
+import { slugifyMilsimName } from "@/lib/slug";
+import CopyMilsimLink from "@/components/CopyMilsimLink";
 
 export const dynamic = "force-dynamic";
 
-function formatAge(fromIso: string) {
-  const from = new Date(fromIso);
-  const now = new Date();
+const PLATFORM_BADGE: Record<string, { dot: string; label: string }> = {
+  PC: { dot: "", label: "PC" },
+  Xbox: { dot: "", label: "Xbox" },
+  PSN: { dot: "", label: "PSN" },
+};
 
-  // Y/M/D diff without external libs
-  let years = now.getFullYear() - from.getFullYear();
-  let months = now.getMonth() - from.getMonth();
-  let days = now.getDate() - from.getDate();
+const fmtDate = new Intl.DateTimeFormat("de-DE", {
+  dateStyle: "medium",
+  timeZone: "Europe/Berlin",
+});
 
-  if (days < 0) {
-    // borrow days from previous month
-    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
-    days += prevMonth;
-    months -= 1;
-  }
-  if (months < 0) {
-    months += 12;
-    years -= 1;
-  }
+const fmtDateTime = new Intl.DateTimeFormat("de-DE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Europe/Berlin",
+});
 
-  years = Math.max(0, years);
-  months = Math.max(0, months);
-  days = Math.max(0, days);
+function getLatestCheckedAt(milsims: any[]) {
+  const dates = milsims
+    .map((m) => (m?.last_checked_at ? new Date(m.last_checked_at).getTime() : 0))
+    .filter((t) => Number.isFinite(t) && t > 0);
 
-  return `${years}y ${months}m ${days}d`;
+  if (dates.length === 0) return null;
+
+  const latest = Math.max(...dates);
+  return new Date(latest);
 }
 
-function medalClasses(kind: "gold" | "silver" | "bronze") {
-  // Neon glow via arbitrary shadows (Tailwind supports arbitrary values). :contentReference[oaicite:0]{index=0}
-  if (kind === "gold") {
-    return {
-      ring: "border-yellow-400/60",
-      glow: "shadow-[0_0_22px_rgba(250,204,21,0.35)]",
-      badge: "bg-yellow-400/15 text-yellow-200 border-yellow-400/40",
-      bar: "bg-yellow-400/70",
-    };
-  }
-  if (kind === "silver") {
-    return {
-      ring: "border-zinc-200/50",
-      glow: "shadow-[0_0_22px_rgba(228,228,231,0.28)]",
-      badge: "bg-zinc-200/10 text-zinc-100 border-zinc-200/30",
-      bar: "bg-zinc-200/60",
-    };
-  }
-  return {
-    ring: "border-amber-500/55",
-    glow: "shadow-[0_0_22px_rgba(245,158,11,0.28)]",
-    badge: "bg-amber-500/10 text-amber-200 border-amber-500/30",
-    bar: "bg-amber-500/60",
-  };
-}
-
-function PodiumCard({
-  rank,
-  name,
-  iconUrl,
-  createdAt,
-  kind,
-  heightClass,
+export default async function MilsimsPage({
+  searchParams,
 }: {
-  rank: number;
-  name: string;
-  iconUrl: string | null | undefined;
-  createdAt: string;
-  kind: "gold" | "silver" | "bronze";
-  heightClass: string;
+  searchParams: Promise<{ q?: string; msg?: string }>;
 }) {
-  const c = medalClasses(kind);
-  return (
-    <div
-      className={[
-        "relative flex flex-col justify-between rounded-2xl border bg-white/5 px-5 py-4",
-        "backdrop-blur-sm",
-        c.ring,
-        c.glow,
-        heightClass,
-      ].join(" ")}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <ServerIcon url={iconUrl} name={name} />
-          <div className="min-w-0">
-            <div className="font-semibold truncate">{name}</div>
-          </div>
-        </div>
+  const { q, msg } = await searchParams;
 
-        <div
-          className={[
-            "shrink-0 rounded-full border px-3 py-1 text-xs font-semibold",
-            c.badge,
-          ].join(" ")}
-        >
-          #{rank}
-        </div>
-      </div>
+  // ✅ refresh-on-visit (global rate limit: 60s)
+  // Keep batch conservative so page loads remain fast.
+  await maybeRefreshDirectoryOnVisit({
+    minIntervalSeconds: 60, // global: one refresh per minute
+    batchLimit: 10,         // refresh up to 10 servers per run
+    minAgeSeconds: 60,      // don't recheck servers checked <60s ago
+  });
 
-      <div className="mt-4 flex items-end justify-between">
-        <div className="text-xs text-white/60">
-          <div>
-            Est: <span className="text-white/80">{new Date(createdAt).toLocaleDateString()}</span>
-          </div>
-          <div>
-            Age: <span className="text-white/80">{formatAge(createdAt)}</span>
-          </div>
-        </div>
+  const milsims = await getVerifiedMilsims(q);
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-white/55">Podium</span>
-          <span className={"h-2 w-10 rounded-full " + c.bar} />
-        </div>
-      </div>
-    </div>
-  );
-}
+  const showMsg =
+    msg && msg !== "NEXT_REDIRECT" && msg !== "undefined" && msg !== "null";
 
-export default async function HallOfFamePage() {
-  const all = await getHallOfFameAll();
-  const ranked = all.filter((m) => !!m.server_created_at);
-
-  const first = ranked[0];
-  const second = ranked[1];
-  const third = ranked[2];
+  const lastUpdated = getLatestCheckedAt(milsims);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* client-side periodic refresh */}
+      <AutoRefresh intervalMs={60_000} />
+
+      {showMsg ? (
+        <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/80">
+          {msg}
+        </div>
+      ) : null}
+
+      {/* top notice */}
+      <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <span className="text-white/80">Last updated:</span>{" "}
+          {lastUpdated ? fmtDateTime.format(lastUpdated) : "—"}
+          <span className="text-white/40"> ·</span>{" "}
+          <span className="text-white/50">Refresh triggers on visits (rate-limited)</span>
+        </div>
+
+        {q ? (
+          <div className="shrink-0 text-xs text-white/50">
+            Filter: <span className="text-white/70">{q}</span>
+          </div>
+        ) : null}
+      </div>
+
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Hall of Fame</h1>
+          <h1 className="text-2xl font-bold">Milsims Directory</h1>
           <p className="text-sm text-white/70">
-            Oldest verified Battlefront II milsims still standing (based on Discord server creation date).
+            Verified servers only. Missing yours? Submit it.
           </p>
         </div>
         <Link
-          href="/milsims"
+          href="/submit"
           className="rounded-xl border border-white/20 px-4 py-2 text-sm hover:border-white/40"
         >
-          Back to Directory
+          Submit
         </Link>
       </div>
 
-      {/* Podium */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:items-end">
-        {/* Silver */}
-        {second ? (
-          <PodiumCard
-            rank={2}
-            name={second.name}
-            iconUrl={second.discord_icon_url}
-            createdAt={second.server_created_at!}
-            kind="silver"
-            heightClass="md:min-h-[170px]"
-          />
+      <form className="flex gap-2" action="/milsims" method="get">
+        <input
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Search by name…"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/30"
+        />
+        <button className="rounded-xl bg-white text-black px-4 py-2 text-sm font-semibold hover:bg-white/90">
+          Search
+        </button>
+      </form>
+
+      <div className="grid gap-3">
+        {milsims.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-white/70">
+            No verified servers yet.
+          </div>
         ) : (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-white/60">
-            #2 — waiting…
-          </div>
-        )}
+          milsims.map((m: any) => {
+            const slug = m.slug ?? slugifyMilsimName(m.name);
 
-        {/* Gold (center, taller) */}
-        {first ? (
-          <PodiumCard
-            rank={1}
-            name={first.name}
-            iconUrl={first.discord_icon_url}
-            createdAt={first.server_created_at!}
-            kind="gold"
-            heightClass="md:min-h-[210px]"
-          />
-        ) : (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-white/60">
-            #1 — waiting…
-          </div>
-        )}
+            return (
+              <div
+                key={m.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-5"
+                style={{ borderLeft: `8px solid ${m.theme_color ?? "#666"}` }}
+              >
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <ServerIcon url={m.discord_icon_url} name={m.name} />
 
-        {/* Bronze */}
-        {third ? (
-          <PodiumCard
-            rank={3}
-            name={third.name}
-            iconUrl={third.discord_icon_url}
-            createdAt={third.server_created_at!}
-            kind="bronze"
-            heightClass="md:min-h-[160px]"
-          />
-        ) : (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-white/60">
-            #3 — waiting…
-          </div>
-        )}
-      </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/milsims/${slug}`}
+                          className="text-lg font-semibold truncate hover:underline"
+                          title="Open detail page"
+                        >
+                          {m.name}
+                        </Link>
 
-      {/* Full ranking table */}
-      <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-          <div>
-            <div className="font-semibold">Full Rankings</div>
-            <div className="text-xs text-white/60">
-              {ranked.length} verified milsims with a known creation date.
-            </div>
-          </div>
-        </div>
+                        <CopyMilsimLink slug={slug} />
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-black/30 text-white/70">
-              <tr className="text-left">
-                <th className="px-5 py-3 w-[80px]">Rank</th>
-                <th className="px-5 py-3">Milsim</th>
-                <th className="px-5 py-3 w-[140px]">Est.</th>
-                <th className="px-5 py-3 w-[140px]">Age</th>
-                <th className="px-5 py-3 w-[120px] text-right">Members</th>
-                <th className="px-5 py-3 w-[120px] text-right">Online</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ranked.map((m, idx) => (
-                <tr
-                  key={m.id}
-                  className="border-t border-white/10 hover:bg-white/5"
-                >
-                  <td className="px-5 py-3 font-semibold text-white/80">
-                    #{idx + 1}
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <ServerIcon url={m.discord_icon_url} name={m.name} />
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">{m.name}</div>
+                        <div className="flex flex-wrap gap-2">
+                          {(m.platforms ?? []).map((p: string) => {
+                            const b = PLATFORM_BADGE[p] ?? { dot: "⚪", label: p };
+                            return (
+                              <span
+                                key={`plat-${m.id}-${p}`}
+                                className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/80"
+                                title={`Platform: ${b.label}`}
+                              >
+                                {b.dot} {b.label}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <a
+                        href={m.invite_url}
+                        className="text-sm text-white/70 underline break-all"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {m.invite_url}
+                      </a>
+
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/70">
+                        {(m.factions ?? []).map((x: string) => (
+                          <span
+                            key={`f-${m.id}-${x}`}
+                            className="rounded-full border border-white/15 px-2 py-1"
+                          >
+                            {x}
+                          </span>
+                        ))}
+                        {(m.tags ?? []).map((x: string) => (
+                          <span
+                            key={`t-${m.id}-${x}`}
+                            className="rounded-full bg-white/10 px-2 py-1"
+                          >
+                            {x}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                  </td>
-                  <td className="px-5 py-3 text-white/70">
-                    {new Date(m.server_created_at!).toLocaleDateString()}
-                  </td>
-                  <td className="px-5 py-3 text-white/70">
-                    {formatAge(m.server_created_at!)}
-                  </td>
-                  <td className="px-5 py-3 text-right text-white/70">
-                    {m.members_count ?? "—"}
-                  </td>
-                  <td className="px-5 py-3 text-right text-white/70">
-                    {m.online_count ?? "—"}
-                  </td>
-                </tr>
-              ))}
-              {ranked.length === 0 ? (
-                <tr>
-                  <td className="px-5 py-6 text-white/60" colSpan={6}>
-                    No verified servers with a known creation date yet.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
+                  </div>
 
-        <div className="px-5 py-4 text-xs text-white/50 border-t border-white/10">
-        Ranking source: Discord server creation timestamp derived from the guild snowflake.
-        </div>
+                  <div className="shrink-0 text-right text-xs text-white/60 space-y-1">
+                    <div>Members: {m.members_count ?? "—"}</div>
+                    <div>Online: {m.online_count ?? "—"}</div>
+
+                    <div className="pt-1">
+                      Est:{" "}
+                      {m.server_created_at ? fmtDate.format(new Date(m.server_created_at)) : "—"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
