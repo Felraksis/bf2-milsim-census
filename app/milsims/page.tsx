@@ -63,7 +63,7 @@ export default async function MilsimsPage({
           <span className="text-white/80">Last updated:</span>{" "}
           {lastUpdated ? fmtDateTime.format(lastUpdated) : "—"}
           <span className="text-white/40"> ·</span>{" "}
-          <span className="text-white/50">Auto-refreshes every 60s</span>
+          <span className="text-white/50">Soon: Auto-refreshes every 60s</span>
         </div>
 
         {/* optional: show active query in the notice */}
