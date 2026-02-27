@@ -1,25 +1,25 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { getVerifiedMilsims, refreshMilsimFromDiscord } from "@/lib/milsims";
+import { getVerifiedMilsims } from "@/lib/milsims";
 import ServerIcon from "@/components/ServerIcon";
+import AutoRefresh from "@/components/AutoRefresh";
 
 export const dynamic = "force-dynamic";
 
-async function refreshAction(formData: FormData) {
-  "use server";
+const PLATFORM_BADGE: Record<string, { dot: string; label: string }> = {
+  PC: { dot: "🔴", label: "PC" },
+  Xbox: { dot: "🟢", label: "Xbox" },
+  PSN: { dot: "🔵", label: "PSN" },
+};
 
-  const id = String(formData.get("id") ?? "").trim();
-  if (!id) redirect("/milsims?msg=Missing%20milsim%20id");
+function getLatestCheckedAt(milsims: any[]) {
+  const dates = milsims
+    .map((m) => (m?.last_checked_at ? new Date(m.last_checked_at).getTime() : 0))
+    .filter((t) => Number.isFinite(t) && t > 0);
 
-  try {
-    await refreshMilsimFromDiscord(id);
-    revalidatePath("/milsims");
-    redirect("/milsims?msg=Refreshed");
-  } catch (e: any) {
-    const msg = typeof e?.message === "string" ? e.message : "Refresh failed";
-    redirect(`/milsims?msg=${encodeURIComponent(msg)}`);
-  }
+  if (dates.length === 0) return null;
+
+  const latest = Math.max(...dates);
+  return new Date(latest);
 }
 
 export default async function MilsimsPage({
@@ -33,13 +33,35 @@ export default async function MilsimsPage({
   const showMsg =
     msg && msg !== "NEXT_REDIRECT" && msg !== "undefined" && msg !== "null";
 
+  const lastUpdated = getLatestCheckedAt(milsims);
+
   return (
     <div className="space-y-5">
+      {/* client-side periodic refresh */}
+      <AutoRefresh intervalMs={60_000} />
+
       {showMsg ? (
         <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/80">
           {msg}
         </div>
       ) : null}
+
+      {/* top notice */}
+      <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <span className="text-white/80">Last updated:</span>{" "}
+          {lastUpdated ? lastUpdated.toLocaleString() : "—"}
+          <span className="text-white/40"> ·</span>{" "}
+          <span className="text-white/50">Auto-refreshes every 60s</span>
+        </div>
+
+        {/* optional: show active query in the notice */}
+        {q ? (
+          <div className="shrink-0 text-xs text-white/50">
+            Filter: <span className="text-white/70">{q}</span>
+          </div>
+        ) : null}
+      </div>
 
       <div className="flex items-end justify-between gap-4">
         <div>
@@ -85,7 +107,27 @@ export default async function MilsimsPage({
                   <ServerIcon url={m.discord_icon_url} name={m.name} />
 
                   <div className="min-w-0">
-                    <div className="text-lg font-semibold truncate">{m.name}</div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-lg font-semibold truncate">
+                        {m.name}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {(m.platforms ?? []).map((p: string) => {
+                          const b = PLATFORM_BADGE[p] ?? { dot: "⚪", label: p };
+                          return (
+                            <span
+                              key={`plat-${m.id}-${p}`}
+                              className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/80"
+                              title={`Platform: ${b.label}`}
+                            >
+                              {b.dot} {b.label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     <a
                       href={m.invite_url}
                       className="text-sm text-white/70 underline break-all"
@@ -96,14 +138,6 @@ export default async function MilsimsPage({
                     </a>
 
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/70">
-                      {(m.platforms ?? []).map((x: string) => (
-                        <span
-                          key={`p-${m.id}-${x}`}
-                          className="rounded-full border border-white/15 px-2 py-1"
-                        >
-                          {x}
-                        </span>
-                      ))}
                       {(m.factions ?? []).map((x: string) => (
                         <span
                           key={`f-${m.id}-${x}`}
@@ -125,19 +159,6 @@ export default async function MilsimsPage({
                 </div>
 
                 <div className="shrink-0 text-right text-xs text-white/60 space-y-1">
-                  <div className="flex justify-end">
-                    <form action={refreshAction}>
-                      <input type="hidden" name="id" value={m.id} />
-                      <button
-                        type="submit"
-                        className="rounded-lg border border-white/20 px-3 py-1 text-xs text-white/80 hover:border-white/40"
-                        title="Refresh member/online counts + icon from Discord"
-                      >
-                        Refresh
-                      </button>
-                    </form>
-                  </div>
-
                   <div>Members: {m.members_count ?? "—"}</div>
                   <div>Online: {m.online_count ?? "—"}</div>
 
@@ -145,13 +166,6 @@ export default async function MilsimsPage({
                     Est:{" "}
                     {m.server_created_at
                       ? new Date(m.server_created_at).toLocaleDateString()
-                      : "—"}
-                  </div>
-
-                  <div className="text-[11px] text-white/50 pt-2">
-                    Last checked:{" "}
-                    {m.last_checked_at
-                      ? new Date(m.last_checked_at).toLocaleString()
                       : "—"}
                   </div>
                 </div>

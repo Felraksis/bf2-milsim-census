@@ -1,20 +1,25 @@
-"use client";
-
-import { useState } from "react";
-
 export default function ServerIcon({
   url,
   name,
+  size = 40,
 }: {
-  url: string | null | undefined;
-  name: string;
+  url?: string | null;
+  name?: string | null;
+  size?: number;
 }) {
-  const [broken, setBroken] = useState(false);
+  const label = (name ?? "Server").trim();
 
-  if (!url || broken) {
+  if (!url) {
     return (
-      <div className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-xs font-semibold text-white/70">
-        {name.trim().slice(0, 2).toUpperCase()}
+      <div
+        className="rounded-xl border border-white/10 bg-white/5 grid place-items-center text-white/60"
+        style={{ width: size, height: size }}
+        aria-label={label}
+        title={label}
+      >
+        <span className="text-xs font-semibold">
+          {label.slice(0, 2).toUpperCase()}
+        </span>
       </div>
     );
   }
@@ -22,12 +27,12 @@ export default function ServerIcon({
   return (
     <img
       src={url}
-      alt=""
-      className="h-10 w-10 rounded-xl border border-white/10 bg-white/5"
+      alt={label}
+      className="rounded-xl border border-white/10 bg-white/5"
+      style={{ width: size, height: size }}
       loading="lazy"
       referrerPolicy="no-referrer"
       crossOrigin="anonymous"
-      onError={() => setBroken(true)}
     />
   );
 }
