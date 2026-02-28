@@ -147,7 +147,7 @@ export async function refreshVerifiedMilsimsBatchFromDiscord(opts?: {
   const { data: candidates, error } = await supabaseServer
     .from("milsims")
     .select("id, last_checked_at")
-    .eq("status", "verified")
+    .in("status", ["verified", "private"])
     .or(`last_checked_at.is.null,last_checked_at.lt.${cutoffIso}`)
     .order("last_checked_at", { ascending: true, nullsFirst: true })
     .limit(limit);
