@@ -93,10 +93,7 @@ export default async function MilsimsPage({
 
       <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <span className="text-white/80">Last updated:</span>{" "}
-          {lastUpdated ? fmtDateTime.format(lastUpdated) : "—"}
-          <span className="mx-2 text-white/30">•</span>
-          <span className="text-white/80">Cron last run:</span>{" "}
+          <span className="text-white/80">Last Updated:</span>{" "}
           {cronLastRunAt ? fmtDateTime.format(new Date(cronLastRunAt)) : "—"}
         </div>
 
