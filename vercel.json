@@ -1,5 +1,8 @@
 {
   "crons": [
-    { "path": "/api/cron/refresh", "schedule": "0 4 * * *" }
+    {
+      "path": "/api/cron/refresh-milsims",
+      "schedule": "0 4 * * *"
+    }
   ]
 }
