@@ -31,11 +31,6 @@ export default function HomePage() {
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-        <div className="text-sm text-white/70">
-          Latest Update (27.02.2026): v1 Launched, feature requests to 'felraksis' on Discord.
-        </div>
-      </div>
     </div>
   );
 }
