@@ -13,10 +13,14 @@ export async function GET(req: Request) {
     at: startedAt.toISOString(),
   });
 
+  const isVercelCron = req.headers.get("x-vercel-cron") === "1";
   const auth = req.headers.get("authorization");
 
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    console.warn("[CRON] Unauthorized attempt");
+  if (!isVercelCron && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    console.warn("[CRON] Unauthorized attempt", {
+      hasAuthorizationHeader: Boolean(auth),
+      xVercelCron: req.headers.get("x-vercel-cron"),
+    });
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
