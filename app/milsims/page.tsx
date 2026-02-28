@@ -1,29 +1,39 @@
 import Link from "next/link";
-import { getVerifiedMilsims } from "@/lib/milsims";
+import { getVerifiedMilsims, getCronLastRunAt } from "@/lib/milsims";
 import ServerIcon from "@/components/ServerIcon";
 import AutoRefresh from "@/components/AutoRefresh";
 import { slugifyMilsimName } from "@/lib/slug";
-import CopyMilsimLink from "@/components/CopyMilsimLink";
-import { getCronLastRunAt } from "@/lib/milsims";
 
 export const dynamic = "force-dynamic";
-const cronLastRunAt = await getCronLastRunAt();
 
-function ActivityDot({
+function ActivityPill({
   status,
 }: {
   status: "active" | "inactive" | "unknown" | null | undefined;
 }) {
   const s = status ?? "unknown";
-  if (s === "active")
+
+  if (s === "active") {
     return (
-      <span className="inline-block h-3 w-3 rounded-full bg-emerald-400" />
+      <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-xs text-emerald-200">
+        Active
+      </span>
     );
-  if (s === "inactive")
+  }
+
+  if (s === "inactive") {
     return (
-      <span className="inline-block h-3 w-3 rounded-full bg-red-400" />
+      <span className="rounded-full border border-red-400/30 bg-red-400/10 px-2 py-1 text-xs text-red-200">
+        Inactive
+      </span>
     );
-  return <span className="inline-block h-3 w-3 rounded-full bg-white" />;
+  }
+
+  return (
+    <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/70">
+      Unknown
+    </span>
+  );
 }
 
 const PLATFORM_BADGE: Record<string, { dot: string; label: string }> = {
@@ -45,11 +55,7 @@ const fmtDateTime = new Intl.DateTimeFormat("de-DE", {
 
 function getLatestCheckedAt(milsims: any[]) {
   const dates = milsims
-    .map((m) =>
-      m?.last_checked_at
-        ? new Date(m.last_checked_at).getTime()
-        : 0
-    )
+    .map((m) => (m?.last_checked_at ? new Date(m.last_checked_at).getTime() : 0))
     .filter((t) => Number.isFinite(t) && t > 0);
 
   if (dates.length === 0) return null;
@@ -64,19 +70,19 @@ export default async function MilsimsPage({
   searchParams: Promise<{ q?: string; msg?: string }>;
 }) {
   const { q, msg } = await searchParams;
-  const milsims = await getVerifiedMilsims(q);
+
+  const [milsims, cronLastRunAt] = await Promise.all([
+    getVerifiedMilsims(q),
+    getCronLastRunAt(),
+  ]);
 
   const showMsg =
-    msg &&
-    msg !== "NEXT_REDIRECT" &&
-    msg !== "undefined" &&
-    msg !== "null";
+    msg && msg !== "NEXT_REDIRECT" && msg !== "undefined" && msg !== "null";
 
   const lastUpdated = getLatestCheckedAt(milsims);
 
   return (
     <div className="space-y-5">
-      {/* client-side periodic refresh */}
       <AutoRefresh intervalMs={60_000} />
 
       {showMsg ? (
@@ -85,10 +91,12 @@ export default async function MilsimsPage({
         </div>
       ) : null}
 
-      {/* top notice */}
       <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <span className="text-white/80">Last updated:</span>{" "}
+          {lastUpdated ? fmtDateTime.format(lastUpdated) : "—"}
+          <span className="mx-2 text-white/30">•</span>
+          <span className="text-white/80">Cron last run:</span>{" "}
           {cronLastRunAt ? fmtDateTime.format(new Date(cronLastRunAt)) : "—"}
         </div>
 
@@ -103,7 +111,7 @@ export default async function MilsimsPage({
         <div>
           <h1 className="text-2xl font-bold">Milsims Directory</h1>
           <p className="text-sm text-white/70">
-            Verified servers only. Missing yours? Submit it.
+            Verified and private servers. Missing yours? Submit it.
           </p>
         </div>
         <Link
@@ -139,24 +147,16 @@ export default async function MilsimsPage({
               <div
                 key={m.id}
                 className="rounded-2xl border border-white/10 bg-white/5 p-5"
-                style={{
-                  borderLeft: `8px solid ${
-                    m.theme_color ?? "#666"
-                  }`,
-                }}
+                style={{ borderLeft: `8px solid ${m.theme_color ?? "#666"}` }}
               >
                 <div className="flex items-start justify-between gap-6">
                   <div className="flex items-center gap-3 min-w-0">
-                    <ServerIcon
-                      url={m.discord_icon_url}
-                      name={m.name}
-                    />
+                    <ServerIcon url={m.discord_icon_url} name={m.name} />
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <ActivityDot
-                          status={m.activity_status}
-                        />
+                        {/* ✅ pill instead of dot */}
+                        <ActivityPill status={m.activity_status} />
 
                         <Link
                           href={`/milsims/${slug}`}
@@ -167,71 +167,44 @@ export default async function MilsimsPage({
                         </Link>
 
                         <div className="flex flex-wrap gap-2">
-                          {(m.platforms ?? []).map(
-                            (p: string) => {
-                              const b =
-                                PLATFORM_BADGE[p] ?? {
-                                  dot: "⚪",
-                                  label: p,
-                                };
-                              return (
-                                <span
-                                  key={`plat-${m.id}-${p}`}
-                                  className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/80"
-                                  title={`Platform: ${b.label}`}
-                                >
-                                  {b.dot} {b.label}
-                                </span>
-                              );
-                            }
-                          )}
+                          {(m.platforms ?? []).map((p: string) => {
+                            const b = PLATFORM_BADGE[p] ?? { dot: "⚪", label: p };
+                            return (
+                              <span
+                                key={`plat-${m.id}-${p}`}
+                                className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/80"
+                                title={`Platform: ${b.label}`}
+                              >
+                                {b.dot} {b.label}
+                              </span>
+                            );
+                          })}
                         </div>
                       </div>
 
-                      {/* Discord invite intentionally removed from directory */}
-
                       <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/70">
-                        {(m.factions ?? []).map(
-                          (x: string) => (
-                            <span
-                              key={`f-${m.id}-${x}`}
-                              className="rounded-full border border-white/15 px-2 py-1"
-                            >
-                              {x}
-                            </span>
-                          )
-                        )}
-                        {(m.tags ?? []).map(
-                          (x: string) => (
-                            <span
-                              key={`t-${m.id}-${x}`}
-                              className="rounded-full bg-white/10 px-2 py-1"
-                            >
-                              {x}
-                            </span>
-                          )
-                        )}
+                        {(m.factions ?? []).map((x: string) => (
+                          <span
+                            key={`f-${m.id}-${x}`}
+                            className="rounded-full border border-white/15 px-2 py-1"
+                          >
+                            {x}
+                          </span>
+                        ))}
+                        {(m.tags ?? []).map((x: string) => (
+                          <span key={`t-${m.id}-${x}`} className="rounded-full bg-white/10 px-2 py-1">
+                            {x}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   </div>
 
                   <div className="shrink-0 text-right text-xs text-white/60 space-y-1">
-                    <div>
-                      Members: {m.members_count ?? "—"}
-                    </div>
-                    <div>
-                      Online: {m.online_count ?? "—"}
-                    </div>
-
+                    <div>Members: {m.members_count ?? "—"}</div>
+                    <div>Online: {m.online_count ?? "—"}</div>
                     <div className="pt-1">
-                      Est:{" "}
-                      {m.server_created_at
-                        ? fmtDate.format(
-                            new Date(
-                              m.server_created_at
-                            )
-                          )
-                        : "—"}
+                      Est: {m.server_created_at ? fmtDate.format(new Date(m.server_created_at)) : "—"}
                     </div>
                   </div>
                 </div>
