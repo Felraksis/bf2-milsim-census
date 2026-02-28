@@ -69,6 +69,8 @@ export default async function MilsimDetailPage({
   const milsim = await getVerifiedMilsimBySlug(slug);
   if (!milsim) return notFound();
 
+  const showDiscordInvite = milsim.status !== "private";
+
   return (
     <div className="space-y-6">
       {/* top bar */}
@@ -82,15 +84,17 @@ export default async function MilsimDetailPage({
 
         <div className="flex items-center gap-2">
           <CopyMilsimLink slug={milsim.slug ?? slug} />
-          <a
-            href={milsim.invite_url}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-black hover:bg-white/90"
-            title="Open Discord invite"
-          >
-            Open in Discord
-          </a>
+            {showDiscordInvite ? (
+              <a
+                href={milsim.invite_url}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-black hover:bg-white/90"
+                title="Open Discord invite"
+              >
+                Open in Discord
+              </a>
+            ) : null}
         </div>
       </div>
 
@@ -113,17 +117,23 @@ export default async function MilsimDetailPage({
                 <ActivityPill status={milsim.activity_status} />
               </div>
 
-              <div className="mt-1 text-sm text-white/60 break-all">
-                <span className="text-white/50">Invite:</span>{" "}
-                <a
-                  href={milsim.invite_url}
-                  className="underline decoration-white/20 hover:decoration-white/40"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {milsim.invite_url}
-                </a>
-              </div>
+              {showDiscordInvite ? (
+                <div className="mt-1 text-sm text-white/60 break-all">
+                  <span className="text-white/50">Invite:</span>{" "}
+                  <a
+                    href={milsim.invite_url}
+                    className="underline decoration-white/20 hover:decoration-white/40"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {milsim.invite_url}
+                  </a>
+                </div>
+              ) : (
+                <div className="mt-1 text-sm text-white/50">
+                  Discord invite is private.
+                </div>
+              )}
 
               {/* badges */}
               <div className="mt-4 flex flex-wrap gap-2 text-xs">
@@ -201,7 +211,9 @@ export default async function MilsimDetailPage({
             )
           }
         />
-        <Stat label="Invite Code" value={milsim.discord_invite_code ?? "—"} />
+        {showDiscordInvite ? (
+          <Stat label="Invite Code" value={milsim.discord_invite_code ?? "—"} />
+        ) : null}
       </div>
 
       {/* optional notes */}

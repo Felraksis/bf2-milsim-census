@@ -19,7 +19,7 @@ export type DirectoryMilsim = {
   claimed_founded_at: string | null;
   lineage_notes: string | null;
 
-  status: "pending" | "verified" | "rejected";
+  status: "pending" | "verified" | "rejected"| "private";
   submitted_by: string | null;
   moderator_notes: string | null;
 
@@ -46,7 +46,7 @@ export async function getVerifiedMilsims(q?: string): Promise<DirectoryMilsim[]>
   let query = supabaseServer
     .from("milsim_directory")
     .select("*")
-    .eq("status", "verified")
+    .in("status", ["verified", "private"]) // ✅ show private entries too
     .order("server_created_at", { ascending: true, nullsFirst: false })
     .order("name", { ascending: true });
 
@@ -172,11 +172,13 @@ export async function refreshVerifiedMilsimsBatchFromDiscord(opts?: {
   return { refreshed, attempted };
 }
 
-export async function getVerifiedMilsimBySlug(slug: string): Promise<DirectoryMilsim | null> {
+export async function getVerifiedMilsimBySlug(
+  slug: string
+): Promise<DirectoryMilsim | null> {
   const { data, error } = await supabaseServer
     .from("milsim_directory")
     .select("*")
-    .eq("status", "verified")
+    .in("status", ["verified", "private"]) // ✅ allow both
     .eq("slug", slug)
     .maybeSingle();
 
