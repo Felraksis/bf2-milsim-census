@@ -1,7 +1,15 @@
 import Link from "next/link";
-import { getVerifiedMilsims, getCronLastRunAt } from "@/lib/milsims";
+import {
+  searchVerifiedMilsims,
+  getCronLastRunAt,
+  getMilsimDirectoryFacets,
+  type MilsimSort,
+} from "@/lib/milsims";
 import ServerIcon from "@/components/ServerIcon";
 import AutoRefresh from "@/components/AutoRefresh";
+import MilsimsFiltersBar, {
+  type ActivityFilter,
+} from "@/components/MilsimFiltersBar";
 import { slugifyMilsimName } from "@/lib/slug";
 
 export const dynamic = "force-dynamic";
@@ -53,33 +61,56 @@ const fmtDateTime = new Intl.DateTimeFormat("de-DE", {
   timeZone: "Europe/Berlin",
 });
 
-function getLatestCheckedAt(milsims: any[]) {
-  const dates = milsims
-    .map((m) => (m?.last_checked_at ? new Date(m.last_checked_at).getTime() : 0))
-    .filter((t) => Number.isFinite(t) && t > 0);
+function asArray(v: string | string[] | undefined): string[] {
+  if (!v) return [];
+  return Array.isArray(v) ? v.filter(Boolean) : [v].filter(Boolean);
+}
 
-  if (dates.length === 0) return null;
-
-  const latest = Math.max(...dates);
-  return new Date(latest);
+function asActivity(v: string | undefined): ActivityFilter {
+  if (v === "active" || v === "inactive" || v === "unknown" || v === "any")
+    return v;
+  return "any";
 }
 
 export default async function MilsimsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; msg?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    msg?: string;
+    platform?: string | string[];
+    faction?: string | string[];
+    tag?: string | string[];
+    sort?: MilsimSort;
+    activity?: string;
+  }>;
 }) {
-  const { q, msg } = await searchParams;
+  const sp = await searchParams;
 
-  const [milsims, cronLastRunAt] = await Promise.all([
-    getVerifiedMilsims(q),
+  const q = sp.q?.trim() || "";
+  const msg = sp.msg;
+
+  const selectedPlatforms = asArray(sp.platform);
+  const selectedFactions = asArray(sp.faction);
+  const selectedTags = asArray(sp.tag);
+  const sort: MilsimSort = sp.sort ?? "age_desc";
+  const activity = asActivity(sp.activity);
+
+  const [milsims, facets, cronLastRunAt] = await Promise.all([
+    searchVerifiedMilsims({
+      q: q || undefined,
+      platforms: selectedPlatforms,
+      factions: selectedFactions,
+      tags: selectedTags,
+      sort,
+      activity: activity === "any" ? undefined : activity,
+    }),
+    getMilsimDirectoryFacets(),
     getCronLastRunAt(),
   ]);
 
   const showMsg =
     msg && msg !== "NEXT_REDIRECT" && msg !== "undefined" && msg !== "null";
-
-  const lastUpdated = getLatestCheckedAt(milsims);
 
   return (
     <div className="space-y-5">
@@ -99,7 +130,7 @@ export default async function MilsimsPage({
 
         {q ? (
           <div className="shrink-0 text-xs text-white/50">
-            Filter: <span className="text-white/70">{q}</span>
+            Search: <span className="text-white/70">{q}</span>
           </div>
         ) : null}
       </div>
@@ -119,22 +150,20 @@ export default async function MilsimsPage({
         </Link>
       </div>
 
-      <form className="flex gap-2" action="/milsims" method="get">
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Search by name…"
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/30"
-        />
-        <button className="rounded-xl bg-white text-black px-4 py-2 text-sm font-semibold hover:bg-white/90">
-          Search
-        </button>
-      </form>
+      <MilsimsFiltersBar
+        q={q}
+        sort={sort}
+        selectedPlatforms={selectedPlatforms}
+        selectedFactions={selectedFactions}
+        selectedTags={selectedTags}
+        activity={activity}
+        facets={facets}
+      />
 
       <div className="grid gap-3">
         {milsims.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-white/70">
-            No verified servers yet.
+            No matching servers.
           </div>
         ) : (
           milsims.map((m: any) => {
@@ -152,7 +181,6 @@ export default async function MilsimsPage({
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        {/* ✅ pill instead of dot */}
                         <ActivityPill status={m.activity_status} />
 
                         <Link
@@ -189,7 +217,10 @@ export default async function MilsimsPage({
                           </span>
                         ))}
                         {(m.tags ?? []).map((x: string) => (
-                          <span key={`t-${m.id}-${x}`} className="rounded-full bg-white/10 px-2 py-1">
+                          <span
+                            key={`t-${m.id}-${x}`}
+                            className="rounded-full bg-white/10 px-2 py-1"
+                          >
                             {x}
                           </span>
                         ))}
@@ -201,7 +232,10 @@ export default async function MilsimsPage({
                     <div>Members: {m.members_count ?? "—"}</div>
                     <div>Online: {m.online_count ?? "—"}</div>
                     <div className="pt-1">
-                      Est: {m.server_created_at ? fmtDate.format(new Date(m.server_created_at)) : "—"}
+                      Est:{" "}
+                      {m.server_created_at
+                        ? fmtDate.format(new Date(m.server_created_at))
+                        : "—"}
                     </div>
                   </div>
                 </div>

@@ -3,7 +3,6 @@ import { fetchDiscordInvite } from "@/lib/discord";
 import { snowflakeToDate } from "@/lib/discordSnowflake";
 import { computeIconColorHex } from "@/lib/iconColor";
 
-
 export type DirectoryMilsim = {
   id: string;
   name: string;
@@ -19,7 +18,7 @@ export type DirectoryMilsim = {
   claimed_founded_at: string | null;
   lineage_notes: string | null;
 
-  status: "pending" | "verified" | "rejected"| "private";
+  status: "pending" | "verified" | "rejected" | "private";
   submitted_by: string | null;
   moderator_notes: string | null;
 
@@ -32,9 +31,22 @@ export type DirectoryMilsim = {
   factions: string[];
   tags: string[];
 
-  // ✅ NEW
   activity_status: "active" | "inactive" | "unknown" | null;
   activity_checked_at: string | null;
+};
+
+export type MilsimSort = "size_desc" | "size_asc" | "age_desc" | "age_asc";
+export type ActivityFilter = "active" | "inactive" | "unknown" | "any";
+
+export type MilsimFilters = {
+  q?: string;
+  platforms?: string[];
+  factions?: string[];
+  tags?: string[];
+  sort?: MilsimSort;
+
+  // pass only real filter values; page/UI can use "any"
+  activity?: Exclude<ActivityFilter, "any">;
 };
 
 function jsonArrayToStringArray(v: unknown): string[] {
@@ -42,17 +54,33 @@ function jsonArrayToStringArray(v: unknown): string[] {
   return v.filter((x) => typeof x === "string") as string[];
 }
 
-export async function getVerifiedMilsims(q?: string): Promise<DirectoryMilsim[]> {
-  let query = supabaseServer
-    .from("milsim_directory")
-    .select("*")
-    .in("status", ["verified", "private"]) // ✅ show private entries too
-    .order("server_created_at", { ascending: true, nullsFirst: false })
-    .order("name", { ascending: true });
+function cleanArray(v?: (string | null | undefined)[] | null): string[] {
+  return (v ?? []).map((x) => (x ?? "").trim()).filter(Boolean);
+}
 
-  if (q && q.trim()) query = query.ilike("name", `%${q.trim()}%`);
+/**
+ * OR-semantics search via SQL RPC using array overlap (&&).
+ * Requires:
+ * - public.search_milsims_directory(...)
+ * - public.get_milsim_directory_facets()
+ */
+export async function searchVerifiedMilsims(
+  filters?: MilsimFilters
+): Promise<DirectoryMilsim[]> {
+  const payload = {
+    p_q: filters?.q?.trim() || null,
+    p_platforms: cleanArray(filters?.platforms) || null,
+    p_factions: cleanArray(filters?.factions) || null,
+    p_tags: cleanArray(filters?.tags) || null,
+    p_sort: filters?.sort ?? "age_desc",
+    p_activity: filters?.activity ?? "any",
+  };
 
-  const { data, error } = await query;
+  const { data, error } = await supabaseServer.rpc(
+    "search_milsims_directory",
+    payload
+  );
+
   if (error) throw new Error(error.message);
 
   return (data ?? []).map((row: any) => ({
@@ -62,6 +90,25 @@ export async function getVerifiedMilsims(q?: string): Promise<DirectoryMilsim[]>
     tags: jsonArrayToStringArray(row.tags),
   })) as DirectoryMilsim[];
 }
+
+export async function getMilsimDirectoryFacets(): Promise<{
+  platforms: string[];
+  factions: string[];
+  tags: string[];
+}> {
+  const { data, error } = await supabaseServer.rpc("get_milsim_directory_facets");
+  if (error) throw new Error(error.message);
+
+  const obj = (data ?? {}) as any;
+
+  return {
+    platforms: Array.isArray(obj.platforms) ? obj.platforms : [],
+    factions: Array.isArray(obj.factions) ? obj.factions : [],
+    tags: Array.isArray(obj.tags) ? obj.tags : [],
+  };
+}
+
+// --- Keep your existing refresh logic (unchanged) ---
 
 export async function refreshMilsimFromDiscord(milsimId: string): Promise<void> {
   const { data: row, error: readErr } = await supabaseServer
@@ -84,26 +131,25 @@ export async function refreshMilsimFromDiscord(milsimId: string): Promise<void> 
 
   const discord = await fetchDiscordInvite(row.invite_url);
   const createdAtIso = snowflakeToDate(discord.guildId).toISOString();
-  
-  const autoColor =
-  discord.iconUrl ? await computeIconColorHex(discord.iconUrl) : null;
+
+  const autoColor = discord.iconUrl
+    ? await computeIconColorHex(discord.iconUrl)
+    : null;
 
   const themeColor = autoColor ?? "#666";
 
   const { error: updErr } = await supabaseServer
     .from("milsims")
     .update({
-    name: discord.guildName,
-    discord_server_id: discord.guildId,
-    discord_invite_code: discord.inviteCode,
-    discord_icon_url: discord.iconUrl,
-    server_created_at: createdAtIso,
-    members_count: discord.members,
-    online_count: discord.online,
-    last_checked_at: new Date().toISOString(),
-
-    // AUTO
-    theme_color: themeColor,
+      name: discord.guildName,
+      discord_server_id: discord.guildId,
+      discord_invite_code: discord.inviteCode,
+      discord_icon_url: discord.iconUrl,
+      server_created_at: createdAtIso,
+      members_count: discord.members,
+      online_count: discord.online,
+      last_checked_at: new Date().toISOString(),
+      theme_color: themeColor,
     })
     .eq("id", milsimId);
 
@@ -130,20 +176,14 @@ export async function getHallOfFameAll(): Promise<DirectoryMilsim[]> {
 }
 
 export async function refreshVerifiedMilsimsBatchFromDiscord(opts?: {
-  // how many servers to refresh per cron tick
   limit?: number;
-  // only refresh servers that haven't been checked in this many seconds
   minAgeSeconds?: number;
 }): Promise<{ refreshed: number; attempted: number }> {
-  const limit = opts?.limit ?? 10; // tune this
+  const limit = opts?.limit ?? 10;
   const minAgeSeconds = opts?.minAgeSeconds ?? 60;
 
   const cutoffIso = new Date(Date.now() - minAgeSeconds * 1000).toISOString();
 
-  // Pick candidates from the base table "milsims" (not the view),
-  // because refreshMilsimFromDiscord updates "milsims".
-  //
-  // We want: verified AND (last_checked_at is null OR last_checked_at < cutoff)
   const { data: candidates, error } = await supabaseServer
     .from("milsims")
     .select("id, last_checked_at")
@@ -160,12 +200,10 @@ export async function refreshVerifiedMilsimsBatchFromDiscord(opts?: {
   for (const row of candidates ?? []) {
     attempted++;
     try {
-      // Reuse your existing logic (includes Discord fetch + icon color + update)
       await refreshMilsimFromDiscord(row.id);
       refreshed++;
     } catch {
-      // Ignore individual failures so the batch continues
-      // (Discord rate limits / bad invite / transient errors)
+      // ignore per-item errors
     }
   }
 
@@ -178,7 +216,7 @@ export async function getVerifiedMilsimBySlug(
   const { data, error } = await supabaseServer
     .from("milsim_directory")
     .select("*")
-    .in("status", ["verified", "private"]) // ✅ allow both
+    .in("status", ["verified", "private"])
     .eq("slug", slug)
     .maybeSingle();
 
