@@ -1,11 +1,17 @@
 // app/milsims/[slug]/page.tsx
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+
 import { getVerifiedMilsimBySlug } from "@/lib/milsims";
 import ServerIcon from "@/components/ServerIcon";
 import CopyMilsimLink from "@/components/CopyMilsimLink";
 
 export const dynamic = "force-dynamic";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bf2-milsims.com";
 
 const fmtDate = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium",
@@ -18,7 +24,92 @@ const fmtDateTime = new Intl.DateTimeFormat("de-DE", {
   timeZone: "Europe/Berlin",
 });
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+function buildDescription(m: Awaited<ReturnType<typeof getVerifiedMilsimBySlug>>) {
+  if (!m) return "Verified Battlefield 2 milsim directory entry.";
+
+  const parts: string[] = [];
+
+  parts.push(`${m.name} is a verified Battlefield 2 milsim community.`);
+
+  // platforms
+  if (m.platforms?.length) parts.push(`Platforms: ${m.platforms.join(", ")}.`);
+
+  // factions/tags (keep short)
+  const facets: string[] = [];
+  if (m.factions?.length) facets.push(...m.factions.slice(0, 4));
+  if (m.tags?.length) facets.push(...m.tags.slice(0, 4));
+
+  if (facets.length) parts.push(`Focus: ${facets.slice(0, 6).join(", ")}.`);
+
+  // stats
+  const members =
+    typeof m.members_count === "number" ? `${m.members_count}` : null;
+  const online =
+    typeof m.online_count === "number" ? `${m.online_count}` : null;
+
+  if (members || online) {
+    const s: string[] = [];
+    if (members) s.push(`${members} members`);
+    if (online) s.push(`${online} online`);
+    parts.push(`Discord stats: ${s.join(", ")}.`);
+  }
+
+  if (m.status === "private") parts.push("Invite link is private.");
+
+  // keep under ~160 chars ideally; but Google will truncate anyway
+  return parts.join(" ");
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const milsim = await getVerifiedMilsimBySlug(slug);
+
+  if (!milsim) {
+    return {
+      title: "Milsim not found | BF2 Milsims",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const canonicalSlug = milsim.slug ?? slug;
+  const url = `${SITE_URL}/milsims/${canonicalSlug}`;
+
+  const title = `${milsim.name} | BF2 Milsims Directory`;
+  const description = buildDescription(milsim);
+
+  const ogImage = milsim.discord_icon_url || undefined;
+
+  return {
+    title,
+    description,
+
+    alternates: {
+      canonical: url,
+    },
+
+    openGraph: {
+      type: "website",
+      url,
+      title,
+      description,
+      siteName: "BF2 Milsims",
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: ogImage ? [ogImage] : undefined,
+    },
+  };
+}
+
+function Stat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
       <div className="text-[11px] uppercase tracking-wide text-white/50">
@@ -84,17 +175,18 @@ export default async function MilsimDetailPage({
 
         <div className="flex items-center gap-2">
           <CopyMilsimLink slug={milsim.slug ?? slug} />
-            {showDiscordInvite ? (
-              <a
-                href={milsim.invite_url}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-black hover:bg-white/90"
-                title="Open Discord invite"
-              >
-                Open in Discord
-              </a>
-            ) : null}
+
+          {showDiscordInvite ? (
+            <a
+              href={milsim.invite_url}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-black hover:bg-white/90"
+              title="Open Discord invite"
+            >
+              Open in Discord
+            </a>
+          ) : null}
         </div>
       </div>
 
@@ -113,7 +205,6 @@ export default async function MilsimDetailPage({
                   {milsim.name}
                 </h1>
 
-                {/* ✅ activity label */}
                 <ActivityPill status={milsim.activity_status} />
               </div>
 
@@ -186,7 +277,6 @@ export default async function MilsimDetailPage({
                 : "—"}
             </div>
 
-            {/* ✅ activity check timestamp */}
             <div>
               <span className="text-white/45">Last activity check:</span>{" "}
               {milsim.activity_checked_at
