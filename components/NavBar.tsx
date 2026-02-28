@@ -6,6 +6,7 @@ const nav = [
   { href: "/submit", label: "Submit" },
   { href: "/hall-of-fame", label: "Hall of Fame" },
   { href: "/contact", label: "Contact" },
+  { href: "/roadmap", label: "Roadmap" },
 ];
 
 export function NavBar() {

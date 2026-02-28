@@ -75,8 +75,8 @@ export default async function MilsimsPage({
         <div className="min-w-0">
           <span className="text-white/80">Last updated:</span>{" "}
           {lastUpdated ? fmtDateTime.format(lastUpdated) : "—"}
-          <span className="text-white/40"> ·</span>{" "}
-          <span className="text-white/50">Soon: Auto-refreshes every 60s</span>
+          <span className="text-white/40"></span>{" "}
+          <span className="text-white/50"></span>
         </div>
 
         {q ? (
