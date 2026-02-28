@@ -192,3 +192,14 @@ export async function getVerifiedMilsimBySlug(
     tags: jsonArrayToStringArray((data as any).tags),
   } as DirectoryMilsim;
 }
+
+export async function getCronLastRunAt(): Promise<string | null> {
+  const { data, error } = await supabaseServer
+    .from("refresh_locks")
+    .select("last_run_at")
+    .eq("key", "milsims_directory_refresh")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data?.last_run_at ?? null;
+}

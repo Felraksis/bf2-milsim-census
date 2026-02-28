@@ -4,8 +4,10 @@ import ServerIcon from "@/components/ServerIcon";
 import AutoRefresh from "@/components/AutoRefresh";
 import { slugifyMilsimName } from "@/lib/slug";
 import CopyMilsimLink from "@/components/CopyMilsimLink";
+import { getCronLastRunAt } from "@/lib/milsims";
 
 export const dynamic = "force-dynamic";
+const cronLastRunAt = await getCronLastRunAt();
 
 function ActivityDot({
   status,
@@ -87,7 +89,7 @@ export default async function MilsimsPage({
       <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <span className="text-white/80">Last updated:</span>{" "}
-          {lastUpdated ? fmtDateTime.format(lastUpdated) : "—"}
+          {cronLastRunAt ? fmtDateTime.format(new Date(cronLastRunAt)) : "—"}
         </div>
 
         {q ? (
