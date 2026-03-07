@@ -160,7 +160,7 @@ export async function getHallOfFameAll(): Promise<DirectoryMilsim[]> {
   const { data, error } = await supabaseServer
     .from("milsim_directory")
     .select("*")
-    .eq("status", "verified")
+    .eq("status", ["verified", "private"])
     .eq("activity_status", "active")
     .order("server_created_at", { ascending: true, nullsFirst: false })
     .order("name", { ascending: true });
