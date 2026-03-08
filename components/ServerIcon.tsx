@@ -1,7 +1,7 @@
 export default function ServerIcon({
   url,
   name,
-  size = 40,
+  size = 80,
 }: {
   url?: string | null;
   name?: string | null;
