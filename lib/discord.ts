@@ -67,7 +67,7 @@ export async function fetchDiscordInvite(
     guildId,
     guildName,
     iconHash,
-    iconUrl: buildGuildIconUrl(guildId, iconHash, 128),
+    iconUrl: buildGuildIconUrl(guildId, iconHash, 256),
     members: typeof data.approximate_member_count === "number" ? data.approximate_member_count : null,
     online: typeof data.approximate_presence_count === "number" ? data.approximate_presence_count : null,
   };

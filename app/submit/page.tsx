@@ -112,48 +112,6 @@ export default function SubmitPage() {
             Name, icon, and member counts are pulled automatically from Discord.
           </p>
         </div>
-
-        <div>
-          <div className="text-xs text-white/60 mb-2">Platforms</div>
-            <div className="flex flex-wrap gap-3">
-                {PLATFORM_OPTIONS.map((p) => (
-                    <label key={p.code} className="cursor-pointer">
-                    {/* hidden real checkbox */}
-                    <input
-                        type="checkbox"
-                        name="platforms"
-                        value={p.code}
-                        className="peer sr-only"
-                    />
-
-                    {/* visual button */}
-                    <div
-                        className="
-                        flex items-center gap-2
-                        rounded-xl border px-4 py-2 text-sm
-                        transition-all duration-150
-
-                        border-white/10 bg-white/5 text-white/80
-                        hover:border-white/30 hover:bg-white/10
-
-                        peer-checked:bg-white
-                        peer-checked:text-black
-                        peer-checked:border-white
-                        peer-checked:shadow-md
-                        peer-checked:ring-2 peer-checked:ring-white/30
-                        "
-                    >
-                        <span>{p.dot}</span>
-                        <span>{p.label}</span>
-                    </div>
-                    </label>
-                ))}
-            </div>
-          <p className="mt-2 text-xs text-white/50">
-            Select all platforms your milsim supports.
-          </p>
-        </div>
-
         <div>
           <label className="text-xs text-white/60">Contact (optional)</label>
           <input
