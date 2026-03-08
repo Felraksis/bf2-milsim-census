@@ -28,7 +28,7 @@ function extractInviteCode(inviteUrl: string): string {
 function buildGuildIconUrl(
   guildId: string,
   iconHash: string | null,
-  size = 128
+  size = 256
 ): string | null {
   if (!iconHash) return null;
 
