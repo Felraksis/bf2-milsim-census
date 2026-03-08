@@ -139,15 +139,9 @@ export default async function MilsimsPage({
         <div>
           <h1 className="text-2xl font-bold">Milsims Directory</h1>
           <p className="text-sm text-white/70">
-            Verified and private servers. Missing yours? Submit it.
+            Verified and private servers. Missing yours? Submit it by contacting 'felraksis' on Discord.
           </p>
         </div>
-        <Link
-          href="/submit"
-          className="rounded-xl border border-white/20 px-4 py-2 text-sm hover:border-white/40"
-        >
-          Submit
-        </Link>
       </div>
 
       <MilsimsFiltersBar
