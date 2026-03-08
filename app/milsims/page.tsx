@@ -93,7 +93,7 @@ export default async function MilsimsPage({
   const selectedPlatforms = asArray(sp.platform);
   const selectedFactions = asArray(sp.faction);
   const selectedTags = asArray(sp.tag);
-  const sort: MilsimSort = sp.sort ?? "age_desc";
+  const sort: MilsimSort = sp.sort ?? "size_desc";
   const activity = asActivity(sp.activity);
 
   const [milsims, facets, cronLastRunAt] = await Promise.all([
