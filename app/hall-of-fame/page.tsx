@@ -214,8 +214,6 @@ export default async function HallOfFamePage() {
                 <th className="px-5 py-3">Milsim</th>
                 <th className="px-5 py-3 w-[140px]">Est.</th>
                 <th className="px-5 py-3 w-[140px]">Age</th>
-                <th className="px-5 py-3 w-[120px] text-right">Members</th>
-                <th className="px-5 py-3 w-[120px] text-right">Online</th>
               </tr>
             </thead>
             <tbody>
@@ -240,12 +238,6 @@ export default async function HallOfFamePage() {
                   </td>
                   <td className="px-5 py-3 text-white/70">
                     {formatAge(m.server_created_at!)}
-                  </td>
-                  <td className="px-5 py-3 text-right text-white/70">
-                    {m.members_count ?? "—"}
-                  </td>
-                  <td className="px-5 py-3 text-right text-white/70">
-                    {m.online_count ?? "—"}
                   </td>
                 </tr>
               ))}
