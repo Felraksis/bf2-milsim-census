@@ -1,5 +1,6 @@
 import Link from "next/link";
-import ServerIcon from "@/components/ServerIcon";
+import { ServerIcon_Small } from "@/components/ServerIcon";
+import { ServerIcon } from "@/components/ServerIcon";
 import { getHallOfFameAll } from "@/lib/milsims";
 
 export const dynamic = "force-dynamic";
@@ -90,15 +91,6 @@ function PodiumCard({
             <div className="font-semibold truncate">{name}</div>
           </div>
         </div>
-
-        <div
-          className={[
-            "shrink-0 rounded-full border px-3 py-1 text-xs font-semibold",
-            c.badge,
-          ].join(" ")}
-        >
-          #{rank}
-        </div>
       </div>
 
       <div className="mt-4 flex items-end justify-between">
@@ -113,7 +105,14 @@ function PodiumCard({
 
         <div className="flex items-center gap-2">
           <span className="text-xs text-white/55">Podium</span>
-          <span className={"h-2 w-10 rounded-full " + c.bar} />
+                  <div
+                    className={[
+                      "shrink-0 rounded-full border px-3 py-1 text-xs font-semibold",
+                      c.badge,
+                    ].join(" ")}
+                  >
+                    #{rank}
+                  </div>
         </div>
       </div>
     </div>
@@ -230,7 +229,7 @@ export default async function HallOfFamePage() {
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <ServerIcon url={m.discord_icon_url} name={m.name} />
+                      <ServerIcon_Small url={m.discord_icon_url} name={m.name} />
                       <div className="min-w-0">
                         <div className="font-medium truncate">{m.name}</div>
                       </div>

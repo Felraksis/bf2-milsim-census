@@ -5,7 +5,7 @@ import {
   getMilsimDirectoryFacets,
   type MilsimSort,
 } from "@/lib/milsims";
-import ServerIcon from "@/components/ServerIcon";
+import { ServerIcon } from "@/components/ServerIcon";
 import AutoRefresh from "@/components/AutoRefresh";
 import MilsimsFiltersBar, {
   type ActivityFilter,

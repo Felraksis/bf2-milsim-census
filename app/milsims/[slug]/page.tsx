@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { getVerifiedMilsimBySlug } from "@/lib/milsims";
-import ServerIcon from "@/components/ServerIcon";
+import { ServerIcon_Large } from "@/components/ServerIcon";
 import CopyMilsimLink from "@/components/CopyMilsimLink";
 
 export const dynamic = "force-dynamic";
@@ -197,7 +197,7 @@ export default async function MilsimDetailPage({
       >
         <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="flex items-center gap-4 min-w-0">
-            <ServerIcon url={milsim.discord_icon_url} name={milsim.name} />
+            <ServerIcon_Large url={milsim.discord_icon_url} name={milsim.name} />
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
