@@ -71,6 +71,7 @@ export async function generateMetadata({
 
   if (!milsim) {
     return {
+      metadataBase: new URL(SITE_URL),
       title: "Milsim not found | BF2 Milsims",
       robots: { index: false, follow: false },
     };
@@ -82,36 +83,17 @@ export async function generateMetadata({
   const title = `${milsim.name} | BF2 Milsims Directory`;
   const description = buildDescription(milsim);
 
-  function normalizeDiscordIcon(url?: string | null) {
-    if (!url) return null;
-
-    try {
-      const u = new URL(url);
-
-      // force static format for embeds
-      if (u.hostname.includes("discordapp.com")) {
-        u.pathname = u.pathname.replace(".gif", ".png");
-        u.searchParams.set("size", "512");
-      }
-
-      return u.toString();
-    } catch {
-      return url;
-    }
-  }
-
   const ogImage =
     normalizeDiscordIcon(milsim.discord_icon_url) ||
     `${SITE_URL}/default-milsim-og.png`;
 
   return {
+    metadataBase: new URL(SITE_URL),
     title,
     description,
-
     alternates: {
       canonical: url,
     },
-
     openGraph: {
       type: "website",
       url,
@@ -121,18 +103,36 @@ export async function generateMetadata({
       images: [
         {
           url: ogImage,
+          width: 512,
+          height: 512,
           alt: `${milsim.name} server icon`,
         },
       ],
     },
-
     twitter: {
-      card: "summary_large_image",
+      card: "summary",
       title,
       description,
       images: [ogImage],
     },
   };
+}
+
+function normalizeDiscordIcon(url?: string | null) {
+  if (!url) return null;
+
+  try {
+    const u = new URL(url);
+
+    if (u.hostname.includes("discordapp.com")) {
+      u.pathname = u.pathname.replace(".gif", ".png");
+      u.searchParams.set("size", "512");
+    }
+
+    return u.toString();
+  } catch {
+    return null;
+  }
 }
 
 function Stat({ label, value }: { label: string; value: ReactNode }) {
