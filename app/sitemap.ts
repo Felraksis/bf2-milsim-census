@@ -46,12 +46,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.5,
     },
-    {
-      url: `${BASE_URL}/submit`,
-      lastModified: now,
-      changeFrequency: "yearly",
-      priority: 0.5,
-    },
 
     // --- Dynamic milsim pages ---
     ...milsims.map((m) => {

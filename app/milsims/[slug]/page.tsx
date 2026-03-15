@@ -81,7 +81,27 @@ export async function generateMetadata({
   const title = `${milsim.name} | BF2 Milsims Directory`;
   const description = buildDescription(milsim);
 
-  const ogImage = milsim.discord_icon_url || undefined;
+  function normalizeDiscordIcon(url?: string | null) {
+    if (!url) return null;
+
+    try {
+      const u = new URL(url);
+
+      // force static format for embeds
+      if (u.hostname.includes("discordapp.com")) {
+        u.pathname = u.pathname.replace(".gif", ".png");
+        u.searchParams.set("size", "512");
+      }
+
+      return u.toString();
+    } catch {
+      return url;
+    }
+  }
+
+  const ogImage =
+    normalizeDiscordIcon(milsim.discord_icon_url) ||
+    `${SITE_URL}/default-milsim-og.png`;
 
   return {
     title,
@@ -97,14 +117,19 @@ export async function generateMetadata({
       title,
       description,
       siteName: "BF2 Milsims",
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      images: [
+        {
+          url: ogImage,
+          alt: `${milsim.name} server icon`,
+        },
+      ],
     },
 
     twitter: {
-      card: ogImage ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title,
       description,
-      images: ogImage ? [ogImage] : undefined,
+      images: [ogImage],
     },
   };
 }
