@@ -24,39 +24,40 @@ const fmtDateTime = new Intl.DateTimeFormat("de-DE", {
   timeZone: "Europe/Berlin",
 });
 
-function buildDescription(m: Awaited<ReturnType<typeof getVerifiedMilsimBySlug>>) {
+function buildDescription(
+  m: Awaited<ReturnType<typeof getVerifiedMilsimBySlug>>
+) {
   if (!m) return "Verified Battlefield 2 milsim directory entry.";
 
   const parts: string[] = [];
 
   parts.push(`${m.name} is a verified Battlefield 2 milsim community.`);
 
-  // platforms
-  if (m.platforms?.length) parts.push(`Platforms: ${m.platforms.join(", ")}.`);
-
-  // factions/tags (keep short)
-  const facets: string[] = [];
-  if (m.factions?.length) facets.push(...m.factions.slice(0, 4));
-  if (m.tags?.length) facets.push(...m.tags.slice(0, 4));
-
-  if (facets.length) parts.push(`Focus: ${facets.slice(0, 6).join(", ")}.`);
-
-  // stats
-  const members =
-    typeof m.members_count === "number" ? `${m.members_count}` : null;
-  const online =
-    typeof m.online_count === "number" ? `${m.online_count}` : null;
-
-  if (members || online) {
-    const s: string[] = [];
-    if (members) s.push(`${members} members`);
-    if (online) s.push(`${online} online`);
-    parts.push(`Discord stats: ${s.join(", ")}.`);
+  if (m.platforms?.length) {
+    parts.push(`Platforms: ${m.platforms.slice(0, 3).join(", ")}.`);
   }
 
-  if (m.status === "private") parts.push("Invite link is private.");
+  const facets: string[] = [];
+  if (m.factions?.length) facets.push(...m.factions.slice(0, 2));
+  if (m.tags?.length) facets.push(...m.tags.slice(0, 2));
 
-  // keep under ~160 chars ideally; but Google will truncate anyway
+  if (facets.length) {
+    parts.push(`Focus: ${facets.join(", ")}.`);
+  }
+
+  if (typeof m.members_count === "number") {
+    parts.push(`${m.members_count} members`);
+    if (typeof m.online_count === "number") {
+      parts[parts.length - 1] += `, ${m.online_count} online.`;
+    } else {
+      parts[parts.length - 1] += `.`;
+    }
+  }
+
+  if (m.status === "private") {
+    parts.push("Private invite.");
+  }
+
   return parts.join(" ");
 }
 
